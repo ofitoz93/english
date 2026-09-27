@@ -39,7 +39,7 @@ export function DailyQuizWidget() {
 
   return (
     <div className="fixed right-4 bottom-4 z-40 w-72">
-      <Card>
+      <Card className="border-t-4 border-t-primary shadow-lg">
         <CardHeader className="flex-row items-center justify-between gap-2 space-y-0">
           <CardTitle className="text-sm">Günlük Kelime</CardTitle>
           <Button size="icon-xs" variant="ghost" onClick={() => setVisible(false)}>
@@ -49,7 +49,7 @@ export function DailyQuizWidget() {
         <CardContent className="flex flex-col gap-2">
           <p className="text-lg font-semibold">{question.prompt}</p>
           <div className="flex flex-col gap-1.5">
-            {question.options.map((option) => {
+            {(question.options ?? []).map((option) => {
               const isCorrect = option === question.correctAnswer;
               const isSelected = option === selected;
               return (

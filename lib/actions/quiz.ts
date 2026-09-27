@@ -3,15 +3,19 @@
 import { requireUser } from "@/lib/dal";
 import { createClient } from "@/lib/supabase/server";
 import { generateSentenceQuestion } from "@/lib/sentence-quiz";
+import { MIN_CHOICE_OPTIONS, isAnswerAccepted } from "@/lib/quiz-utils";
+import type { CefrLevel } from "@/lib/types";
 
 export type QuizMode = "word" | "flashcard" | "daily" | "sentence";
+export type QuizAnswerMode = "choice" | "typing";
 
 export type WordQuizQuestion = {
   wordId: string;
   prompt: string;
   promptLang: "en" | "tr";
   correctAnswer: string;
-  options: string[];
+  acceptedAnswers: string[];
+  options: string[] | null;
 };
 
 export type FlashcardQuizQuestion = {
@@ -26,7 +30,8 @@ function shuffle<T>(items: T[]): T[] {
 }
 
 export async function getWordQuizQuestion(
-  level?: string,
+  levels?: CefrLevel[],
+  mode: QuizAnswerMode = "choice",
 ): Promise<WordQuizQuestion | null> {
   const user = await requireUser();
   const supabase = await createClient();
@@ -36,26 +41,53 @@ export async function getWordQuizQuestion(
     .select("word_en, word_tr")
     .eq("user_id", user.id);
 
-  if (level && level !== "all") query = query.eq("level", level);
+  if (levels && levels.length > 0) query = query.in("level", levels);
 
-  const { data: words } = await query;
-  if (!words || words.length === 0) return null;
+  const { data: filtered } = await query;
+  if (!filtered || filtered.length === 0) return null;
 
-  const target = words[Math.floor(Math.random() * words.length)];
+  const target = filtered[Math.floor(Math.random() * filtered.length)];
+  const meanings = target.word_tr.length > 0 ? target.word_tr : [target.word_en];
+  const primaryMeaning = meanings[0];
   const promptLang: "en" | "tr" = Math.random() < 0.5 ? "en" : "tr";
-  const prompt = promptLang === "en" ? target.word_en : target.word_tr;
-  const correctAnswer = promptLang === "en" ? target.word_tr : target.word_en;
 
-  const distractors = shuffle(words.filter((w) => w.word_en !== target.word_en))
-    .slice(0, 3)
-    .map((w) => (promptLang === "en" ? w.word_tr : w.word_en));
+  const prompt = promptLang === "en" ? target.word_en : primaryMeaning;
+  const correctAnswer = promptLang === "en" ? primaryMeaning : target.word_en;
+  const acceptedAnswers = promptLang === "en" ? meanings : [target.word_en];
+
+  let options: string[] | null = null;
+
+  if (mode === "choice") {
+    // The target word still respects the level filter, but distractors can
+    // come from the full word list so multiple choice can still reach the
+    // minimum option count even with a narrow level selection.
+    let pool = filtered;
+    if (levels && levels.length > 0 && filtered.length < MIN_CHOICE_OPTIONS) {
+      const { data: allWords } = await supabase
+        .from("user_words")
+        .select("word_en, word_tr")
+        .eq("user_id", user.id);
+      pool = allWords ?? filtered;
+    }
+
+    const distractors = shuffle(pool.filter((w) => w.word_en !== target.word_en))
+      .map((w) => (promptLang === "en" ? (w.word_tr[0] ?? w.word_en) : w.word_en))
+      .filter(
+        (value, i, arr) =>
+          !isAnswerAccepted(value, [correctAnswer]) && arr.indexOf(value) === i,
+      )
+      .slice(0, MIN_CHOICE_OPTIONS - 1);
+
+    options = shuffle([correctAnswer, ...distractors]);
+  }
 
   return {
     wordId: target.word_en,
     prompt,
     promptLang,
     correctAnswer,
-    options: shuffle([correctAnswer, ...distractors]),
+    acceptedAnswers,
+    options,
   };
 }
 
@@ -95,15 +127,16 @@ export type SentenceQuizQuestion = {
   isCorrect: boolean;
 };
 
-export async function getSentenceQuizQuestion(): Promise<SentenceQuizQuestion | null> {
+export async function getSentenceQuizQuestion(
+  levels?: CefrLevel[],
+): Promise<SentenceQuizQuestion | null> {
   const user = await requireUser();
   const supabase = await createClient();
 
-  const { data: words } = await supabase
-    .from("user_words")
-    .select("word_en")
-    .eq("user_id", user.id);
+  let query = supabase.from("user_words").select("word_en").eq("user_id", user.id);
+  if (levels && levels.length > 0) query = query.in("level", levels);
 
+  const { data: words } = await query;
   if (!words || words.length === 0) return null;
 
   const target = words[Math.floor(Math.random() * words.length)];

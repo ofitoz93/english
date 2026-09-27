@@ -37,7 +37,7 @@ export default async function FlashcardsPage() {
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-heading text-xl font-semibold">Flashcard&apos;lar</h1>
+          <h1 className="font-heading text-2xl font-semibold">Flashcard&apos;lar</h1>
           <p className="text-sm text-muted-foreground">
             Bir görsel yükle ya da çiz, kartın arkasında kelime görünsün.
           </p>
@@ -46,7 +46,9 @@ export default async function FlashcardsPage() {
       </div>
 
       {withUrls.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Henüz flashcard oluşturmadın.</p>
+        <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border py-16 text-center">
+          <p className="text-sm text-muted-foreground">Henüz flashcard oluşturmadın.</p>
+        </div>
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
           {withUrls.map(

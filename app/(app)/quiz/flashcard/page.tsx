@@ -49,7 +49,7 @@ export default function FlashcardQuizPage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
-        <h1 className="font-heading text-xl font-semibold">Flashcard Quizi</h1>
+        <h1 className="font-heading text-2xl font-semibold">Flashcard Quizi</h1>
         <p className="text-sm text-muted-foreground">
           Skor: {score.correct}/{score.total}
         </p>

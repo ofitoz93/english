@@ -10,17 +10,20 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import type { CefrLevel } from "@/lib/types";
+import { LevelFilter } from "../_components/level-filter";
 
 export default function SentenceQuizPage() {
+  const [levels, setLevels] = useState<CefrLevel[]>([]);
   const [question, setQuestion] = useState<SentenceQuizQuestion | null>(null);
   const [answer, setAnswer] = useState<boolean | null>(null);
   const [score, setScore] = useState({ correct: 0, total: 0 });
   const [loading, setLoading] = useState(true);
 
-  async function loadQuestion() {
+  async function loadQuestion(currentLevels: CefrLevel[]) {
     setLoading(true);
     setAnswer(null);
-    const q = await getSentenceQuizQuestion();
+    const q = await getSentenceQuizQuestion(currentLevels.length > 0 ? currentLevels : undefined);
     setQuestion(q);
     setLoading(false);
   }
@@ -38,6 +41,11 @@ export default function SentenceQuizPage() {
     };
   }, []);
 
+  function handleLevelsChange(nextLevels: CefrLevel[]) {
+    setLevels(nextLevels);
+    loadQuestion(nextLevels);
+  }
+
   async function handleAnswer(userSaysCorrect: boolean) {
     if (!question) return;
     setAnswer(userSaysCorrect);
@@ -49,17 +57,20 @@ export default function SentenceQuizPage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
-        <h1 className="font-heading text-xl font-semibold">Cümle Quizi</h1>
+        <h1 className="font-heading text-2xl font-semibold">Cümle Quizi</h1>
         <p className="text-sm text-muted-foreground">
           Skor: {score.correct}/{score.total}
         </p>
       </div>
 
+      <LevelFilter selected={levels} onChange={handleLevelsChange} />
+
       {loading && <p className="text-sm text-muted-foreground">Yükleniyor...</p>}
 
       {!loading && !question && (
         <p className="text-sm text-muted-foreground">
-          Quiz için önce Kelimelerim sayfasından birkaç kelime eklemelisin.
+          Seçtiğin seviyede kelime bulunamadı. Önce Kelimelerim sayfasından birkaç kelime
+          eklemelisin ya da seviye filtresini genişlet.
         </p>
       )}
 
@@ -96,7 +107,9 @@ export default function SentenceQuizPage() {
                 Yanlış
               </Button>
             </div>
-            {answer !== null && <Button onClick={loadQuestion}>Sonraki Cümle</Button>}
+            {answer !== null && (
+              <Button onClick={() => loadQuestion(levels)}>Sonraki Cümle</Button>
+            )}
           </CardContent>
         </Card>
       )}

@@ -23,7 +23,7 @@ export default async function NotesPage() {
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-heading text-xl font-semibold">Notlar</h1>
+          <h1 className="font-heading text-2xl font-semibold">Notlar</h1>
           <p className="text-sm text-muted-foreground">
             Ders notlarını yaz, PDF olarak indir.
           </p>
@@ -43,9 +43,11 @@ export default async function NotesPage() {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {notes?.map((note) => (
           <Link key={note.id} href={`/notes/${note.id}`}>
-            <Card className="h-full transition-colors hover:bg-muted/50">
-              <CardHeader className="flex-row items-center gap-2 space-y-0">
-                <NotebookText className="size-4 text-muted-foreground" />
+            <Card className="h-full transition-all hover:-translate-y-0.5 hover:shadow-md">
+              <CardHeader className="flex-row items-center gap-2.5 space-y-0">
+                <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+                  <NotebookText className="size-4" />
+                </div>
                 <CardTitle className="text-base">{note.title}</CardTitle>
               </CardHeader>
               <CardContent>
