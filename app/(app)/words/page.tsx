@@ -14,9 +14,11 @@ import {
 import { Clapperboard } from "lucide-react";
 import { SpeakButton } from "@/components/speak-button";
 import { AddWordForm } from "./_components/add-word-form";
+import { AddWordManualDialog } from "./_components/add-word-manual-dialog";
 import { DeleteWordButton } from "./_components/delete-word-button";
+import { EditWordDialog } from "./_components/edit-word-dialog";
 import { LevelSelect } from "./_components/level-select";
-import type { CefrLevel } from "@/lib/types";
+import type { CefrLevel, WordMeaning } from "@/lib/types";
 
 type UserWord = {
   id: string;
@@ -26,6 +28,7 @@ type UserWord = {
   source_title: string | null;
   source_note: string | null;
   created_at: string;
+  word_meanings: WordMeaning[];
 };
 
 const FILTERS: { value: string; label: string }[] = [
@@ -52,8 +55,9 @@ export default async function WordsPage({
 
   let query = supabase
     .from("user_words")
-    .select("*")
-    .order("created_at", { ascending: false });
+    .select("*, word_meanings(*)")
+    .order("created_at", { ascending: false })
+    .order("created_at", { ascending: true, referencedTable: "word_meanings" });
 
   if (level === "none") {
     query = query.is("level", null);
@@ -72,7 +76,10 @@ export default async function WordsPage({
         </p>
       </div>
 
-      <AddWordForm />
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
+        <AddWordForm />
+        <AddWordManualDialog />
+      </div>
 
       <div className="flex flex-wrap gap-1.5">
         {FILTERS.map((filter) => (
@@ -137,7 +144,14 @@ export default async function WordsPage({
                 <LevelSelect id={word.id} level={word.level} />
               </TableCell>
               <TableCell>
-                <DeleteWordButton id={word.id} />
+                <div className="flex items-center gap-0.5">
+                  <EditWordDialog
+                    userWordId={word.id}
+                    wordEn={word.word_en}
+                    meanings={word.word_meanings}
+                  />
+                  <DeleteWordButton id={word.id} />
+                </div>
               </TableCell>
             </TableRow>
           ))}

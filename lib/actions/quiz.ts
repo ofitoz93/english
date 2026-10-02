@@ -3,10 +3,11 @@
 import { requireUser } from "@/lib/dal";
 import { createClient } from "@/lib/supabase/server";
 import { generateSentenceQuestion } from "@/lib/sentence-quiz";
-import { MIN_CHOICE_OPTIONS, isAnswerAccepted } from "@/lib/quiz-utils";
+import { MIN_CHOICE_OPTIONS, isAnswerAccepted, weightedPick } from "@/lib/quiz-utils";
+import { getMistakeWeights, weightOf } from "@/lib/mistake-weights";
 import type { CefrLevel } from "@/lib/types";
 
-export type QuizMode = "word" | "flashcard" | "daily" | "sentence";
+export type QuizMode = "word" | "flashcard" | "daily" | "sentence" | "puzzle";
 export type QuizAnswerMode = "choice" | "typing";
 
 export type WordQuizQuestion = {
@@ -46,7 +47,8 @@ export async function getWordQuizQuestion(
   const { data: filtered } = await query;
   if (!filtered || filtered.length === 0) return null;
 
-  const target = filtered[Math.floor(Math.random() * filtered.length)];
+  const weights = await getMistakeWeights(supabase, user.id);
+  const target = weightedPick(filtered, (w) => weightOf(weights, w.word_en));
   const meanings = target.word_tr.length > 0 ? target.word_tr : [target.word_en];
   const primaryMeaning = meanings[0];
   const promptLang: "en" | "tr" = Math.random() < 0.5 ? "en" : "tr";
@@ -102,7 +104,8 @@ export async function getFlashcardQuizQuestion(): Promise<FlashcardQuizQuestion 
 
   if (!cards || cards.length === 0) return null;
 
-  const target = cards[Math.floor(Math.random() * cards.length)];
+  const weights = await getMistakeWeights(supabase, user.id);
+  const target = weightedPick(cards, (c) => weightOf(weights, c.word_en));
   const { data: signed } = await supabase.storage
     .from("flashcards")
     .createSignedUrl(target.image_path, 60 * 60);
@@ -139,7 +142,8 @@ export async function getSentenceQuizQuestion(
   const { data: words } = await query;
   if (!words || words.length === 0) return null;
 
-  const target = words[Math.floor(Math.random() * words.length)];
+  const weights = await getMistakeWeights(supabase, user.id);
+  const target = weightedPick(words, (w) => weightOf(weights, w.word_en));
   const { sentence, isCorrect } = generateSentenceQuestion(target.word_en);
 
   return { wordId: target.word_en, sentence, isCorrect };

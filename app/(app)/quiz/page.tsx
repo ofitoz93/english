@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/dal";
-import { BookOpen, GalleryVerticalEnd, SpellCheck } from "lucide-react";
+import { BookOpen, GalleryVerticalEnd, SpellCheck, Puzzle } from "lucide-react";
 import {
   Card,
   CardDescription,
@@ -30,6 +30,13 @@ const MODES = [
     icon: SpellCheck,
     accent: "chart-3",
   },
+  {
+    href: "/quiz/puzzle",
+    title: "Kelime Bulmacası",
+    description: "Türkçesini oku, İngilizcesini yaz, puan topla.",
+    icon: Puzzle,
+    accent: "chart-4",
+  },
 ] as const;
 
 export default async function QuizPage() {
@@ -42,7 +49,7 @@ export default async function QuizPage() {
         <p className="text-sm text-muted-foreground">Bir quiz modu seç.</p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {MODES.map(({ href, title, description, icon: Icon, accent }) => (
           <Link key={href} href={href}>
             <Card className="h-full transition-all hover:-translate-y-0.5 hover:shadow-md">
